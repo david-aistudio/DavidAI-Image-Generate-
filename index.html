@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>David's AI Generator</title>
+    <style>
+        /* === GLOBAL STYLES === */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* === HEADER === */
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+        
+        .logo {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(45deg, #8a2be2, #ff00ff, #00ffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        
+        .tagline {
+            color: #a9a9ff;
+            font-size: 1.2rem;
+        }
+        
+        /* === MAIN CONTENT === */
+        .glass-card {
+            background: rgba(25, 25, 60, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            margin-bottom: 25px;
+        }
+        
+        h2 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: #8a2be2;
+        }
+        
+        /* === GENERATOR FORM === */
+        #prompt {
+            width: 100%;
+            min-height: 120px;
+            padding: 15px;
+            background: rgba(0, 0, 30, 0.4);
+            border: 1px solid #4e54c8;
+            border-radius: 12px;
+            color: white;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            resize: vertical;
+        }
+        
+        #prompt:focus {
+            outline: none;
+            border-color: #8a2be2;
+            box-shadow: 0 0 0 3px rgba(138, 43, 226, 0.3);
+        }
+        
+        .btn-generate {
+            background: linear-gradient(45deg, #8a2be2, #4e54c8);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-generate:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 14px rgba(138, 43, 226, 0.4);
+        }
+        
+        .btn-generate:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .error-message {
+            color: #ff6b6b;
+            margin: 10px 0;
+            text-align: center;
+        }
+        
+        /* === IMAGE RESULT === */
+        .result-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 400px;
+            justify-content: center;
+        }
+        
+        #imageResult {
+            max-width: 100%;
+            max-height: 70vh;
+            border-radius: 12px;
+            border: 2px solid #4e54c8;
+            display: none;
+        }
+        
+        .watermark {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+        
+        .loader {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(138, 43, 226, 0.3);
+            border-top: 5px solid #8a2be2;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .btn-download {
+            background: linear-gradient(45deg, #00c6ff, #0072ff);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-download:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 114, 255, 0.3);
+        }
+        
+        /* === GALLERY === */
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .gallery-item {
+            border-radius: 8px;
+            overflow: hidden;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.3);
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        
+        .gallery-item:hover img {
+            transform: scale(1.05);
+        }
+        
+        .gallery-prompt {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* === FOOTER === */
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            color: #a9a9ff;
+            font-size: 0.9rem;
+        }
+        
+        /* === RESPONSIVE === */
+        @media (min-width: 768px) {
+            .main-grid {
+                display: grid;
+                grid-template-columns: 2fr 1fr;
+                gap: 25px;
+            }
+            
+            .gallery {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">David's AI Studio</div>
+            <div class="tagline">Generate gambar AI kualitas profesional dengan satu klik</div>
+        </header>
+        
+        <div class="main-grid">
+            <div>
+                <div class="glass-card">
+                    <h2>AI Image Generator</h2>
+                    <form id="generatorForm">
+                        <textarea 
+                            id="prompt" 
+                            placeholder="Deskripsikan gambar yang kamu inginkan... Contoh: 'Astronot naik kuda di Mars, gaya anime, detail tinggi'"
+                        ></textarea>
+                        
+                        <div id="errorMessage" class="error-message"></div>
+                        
+                        <button type="submit" class="btn-generate" id="generateBtn">
+                            Generate Gambar
+                        </button>
+                    </form>
+                    
+                    <div style="margin-top: 20px;">
+                        <h3>Contoh Prompt:</h3>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
+                            <div class="prompt-example" style="background: rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 8px; font-size: 0.9rem; cursor: pointer;">Kucing samurai di hutan sakura</div>
+                            <div class="prompt-example" style="background: rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 8px; font-size: 0.9rem; cursor: pointer;">Kota futuristik dengan mobil terbang di malam hari</div>
+                            <div class="prompt-example" style="background: rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 8px; font-size: 0.9rem; cursor: pointer;">Naga api di atas gunung, digital art</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="glass-card">
+                    <h2>Hasil Gambar</h2>
+                    <div class="result-container">
+                        <div class="loader" id="loader">
+                            <div class="spinner"></div>
+                            <p>AI sedang membuat gambarmu...</p>
+                            <p style="color: #aaa; margin-top: 10px;">Biasanya membutuhkan waktu 10-20 detik</p>
+                        </div>
+                        
+                        <div style="position: relative;">
+                            <img id="imageResult" alt="Generated image">
+                            <div class="watermark">David's AI Studio</div>
+                        </div>
+                        
+                        <button class="btn-download" id="downloadBtn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                                <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                            </svg>
+                            Download Gambar
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <div class="glass-card">
+                    <h2>Gallery</h2>
+                    <p>10 gambar terakhir yang di-generate</p>
+                    <div class="gallery" id="gallery"></div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            &copy; 2024 David's AI Studio - Powered by Stable Diffusion AI
+        </footer>
+    </div>
+
+    <script>
+        // TOKEN KHUSUS UNTUK DAVID (500 gambar/hari)
+        const HF_TOKEN = "hf_xxxxxxxxxxxxxxxx";
+        
+        // DOM Elements
+        const generatorForm = document.getElementById('generatorForm');
+        const promptInput = document.getElementById('prompt');
+        const generateBtn = document.getElementById('generateBtn');
+        const imageResult = document.getElementById('imageResult');
+        const loader = document.getElementById('loader');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const gallery = document.getElementById('gallery');
+        
+        // Contoh prompt
+        const promptExamples = document.querySelectorAll('.prompt-example');
+        promptExamples.forEach(example => {
+            example.addEventListener('click', () => {
+                promptInput.value = example.textContent;
+            });
+        });
+        
+        // Load gallery dari localStorage
+        function loadGallery() {
+            const savedGallery = localStorage.getItem('aiGallery');
+            if (savedGallery) {
+                const items = JSON.parse(savedGallery);
+                gallery.innerHTML = '';
+                
+                items.forEach(item => {
+                    const galleryItem = document.createElement('div');
+                    galleryItem.className = 'gallery-item';
+                    galleryItem.innerHTML = `
+                        <img src="${item.image}" alt="${item.prompt}">
+                        <div class="gallery-prompt">${item.prompt}</div>
+                    `;
+                    
+                    galleryItem.addEventListener('click', () => {
+                        imageResult.src = item.image;
+                        imageResult.style.display = 'block';
+                        downloadBtn.style.display = 'flex';
+                    });
+                    
+                    gallery.appendChild(galleryItem);
+                });
+            }
+        }
+        
+        // Simpan ke gallery
+        function saveToGallery(prompt, imageUrl) {
+            const item = {
+                prompt: prompt,
+                image: imageUrl,
+                date: new Date().toISOString()
+            };
+            
+            let galleryItems = [];
+            const savedGallery = localStorage.getItem('aiGallery');
+            
+            if (savedGallery) {
+                galleryItems = JSON.parse(savedGallery);
+            }
+            
+            // Simpan maksimal 10 item
+            galleryItems.unshift(item);
+            if (galleryItems.length > 10) {
+                galleryItems.pop();
+            }
+            
+            localStorage.setItem('aiGallery', JSON.stringify(galleryItems));
+            loadGallery();
+        }
+        
+        // Generate gambar
+        async function generateImage(prompt) {
+            try {
+                // Tampilkan loader
+                loader.style.display = 'flex';
+                imageResult.style.display = 'none';
+                downloadBtn.style.display = 'none';
+                errorMessage.textContent = '';
+                
+                // Panggil API Hugging Face
+                const response = await fetch(
+                    "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1",
+                    {
+                        method: "POST",
+                        headers: { 
+                            "Authorization": `Bearer ${HF_TOKEN}`,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ 
+                            inputs: prompt,
+                            parameters: {
+                                width: 512,
+                                height: 512
+                            }
+                        })
+                    }
+                );
+                
+                if (!response.ok) {
+                    throw new Error("Gagal generate gambar. Coba lagi atau ganti prompt.");
+                }
+                
+                const blob = await response.blob();
+                const imageUrl = URL.createObjectURL(blob);
+                
+                // Tampilkan hasil
+                imageResult.src = imageUrl;
+                imageResult.style.display = 'block';
+                downloadBtn.style.display = 'flex';
+                
+                // Simpan ke gallery
+                saveToGallery(prompt, imageUrl);
+                
+            } catch (error) {
+                errorMessage.textContent = error.message || "Terjadi kesalahan. Silakan coba lagi.";
+                console.error("Error:", error);
+            } finally {
+                // Sembunyikan loader
+                loader.style.display = 'none';
+                generateBtn.disabled = false;
+            }
+        }
+        
+        // Download gambar
+        function downloadImage() {
+            if (!imageResult.src) return;
+            
+            const link = document.createElement('a');
+            link.href = imageResult.src;
+            link.download = `david-ai-art-${Date.now()}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // Event listeners
+        generatorForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const prompt = promptInput.value.trim();
+            if (!prompt) {
+                errorMessage.textContent = "Silakan masukkan deskripsi gambar terlebih dahulu!";
+                return;
+            }
+            
+            generateBtn.disabled = true;
+            generateImage(prompt);
+        });
+        
+        downloadBtn.addEventListener('click', downloadImage);
+        
+        // Inisialisasi gallery saat pertama kali load
+        window.addEventListener('DOMContentLoaded', loadGallery);
+    </script>
+</body>
+</html>
